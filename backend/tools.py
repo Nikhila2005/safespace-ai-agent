@@ -1,9 +1,14 @@
-# Step1: Setup Ollama with Medgemma tool
-import ollama
+# Step1: Setup Medgemma tool (with Groq fallback for deployment)
+try:
+    import ollama
+    OLLAMA_AVAILABLE = True
+except ImportError:
+    OLLAMA_AVAILABLE = False
+    print("⚠️ Ollama not available, will use Groq API for therapy responses")
 
 def query_medgemma(prompt: str) -> str:
     """
-    Calls MedGemma model with a therapist personality profile.
+    Calls MedGemma model (or Groq fallback) with a therapist personality profile.
     Returns responses as an empathic mental health professional.
     """
     system_prompt = """You are Dr. Emily Hartman, a warm and experienced clinical psychologist. 
@@ -24,28 +29,56 @@ def query_medgemma(prompt: str) -> str:
     """
     
     try:
-        print(f"🔍 Calling MedGemma with prompt: {prompt}")
-        response = ollama.chat(
-            model='alibayram/medgemma:4b',
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt}
-            ],
-            options={
-                'num_predict': 350,  # Slightly higher for structured responses
-                'temperature': 0.7,  # Balanced creativity/accuracy
-                'top_p': 0.9        # For diverse but relevant responses
-            }
-        )
-        result = response['message']['content'].strip()
-        print(f"✅ MedGemma response: {result[:100]}...")
-        return result
+        # Try Ollama first if available (local development)
+        if OLLAMA_AVAILABLE:
+            print(f"🔍 Calling MedGemma with prompt: {prompt}")
+            response = ollama.chat(
+                model='alibayram/medgemma:4b',
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                options={
+                    'num_predict': 350,
+                    'temperature': 0.7,
+                    'top_p': 0.9
+                }
+            )
+            result = response['message']['content'].strip()
+            print(f"✅ MedGemma response: {result[:100]}...")
+            return result
+        else:
+            # Fallback to Groq API for production deployment
+            print(f"🔍 Using Groq API fallback for therapy response")
+            from .config import GROQ_API_KEY
+            from langchain_groq import ChatGroq
+            from langchain_core.messages import HumanMessage, SystemMessage
+            
+            if not GROQ_API_KEY:
+                raise ValueError("GROQ_API_KEY not set")
+            
+            llm = ChatGroq(
+                model="llama-3.1-8b-instant",
+                groq_api_key=GROQ_API_KEY,
+                temperature=0.7,
+            )
+            
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=prompt)
+            ]
+            
+            response = llm.invoke(messages)
+            result = response.content.strip()
+            print(f"✅ Groq therapy response: {result[:100]}...")
+            return result
+            
     except Exception as e:
-        error_msg = f"MedGemma error: {str(e)}"
+        error_msg = f"Therapy response error: {str(e)}"
         print(f"❌ {error_msg}")
         import traceback
         traceback.print_exc()
-        return f"I'm having technical difficulties connecting to my therapeutic guidance system. However, I want you to know your feelings matter. Can you tell me more about what's making you feel sad?"
+        return f"I'm here to support you. I can sense you're going through a difficult time. Your feelings are completely valid. Can you tell me more about what's been weighing on your mind? I'm listening."
 
 # Step2: Setup Twilio calling API tool
 from twilio.rest import Client
