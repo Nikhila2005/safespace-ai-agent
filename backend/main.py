@@ -2,9 +2,21 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 import uvicorn
-from ai_agent import get_agent_response
+from .ai_agent import get_agent_response
 
-app = FastAPI()
+app = FastAPI(title="SafeSpace AI Agent API", version="1.0.0")
+
+
+@app.get("/")
+async def root():
+    return {
+        "message": "Welcome to SafeSpace AI Agent API",
+        "status": "running",
+        "endpoints": {
+            "docs": "/docs",
+            "ask": "/ask (POST)"
+        }
+    }
 
 
 # Step2: Receive and validate request from Frontend
