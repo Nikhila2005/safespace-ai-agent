@@ -1,7 +1,7 @@
-from tools import query_medgemma, call_emergency, find_nearby_therapists
+from .tools import query_medgemma, call_emergency, find_nearby_therapists
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage, SystemMessage
-from config import GROQ_API_KEY
+from .config import GROQ_API_KEY
 import re
 
 
