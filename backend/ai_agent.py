@@ -7,11 +7,21 @@ import re
 
 # --------------- LLM -------------------
 
-llm = ChatGroq(
-    model="llama-3.1-8b-instant",
-    groq_api_key=GROQ_API_KEY,
-    temperature=0.2,
-)
+# Lazy initialization - LLM will be created when first needed
+_llm = None
+
+def get_llm():
+    """Get or create the LLM instance."""
+    global _llm
+    if _llm is None:
+        if not GROQ_API_KEY:
+            raise ValueError("GROQ_API_KEY environment variable is not set")
+        _llm = ChatGroq(
+            model="llama-3.1-8b-instant",
+            groq_api_key=GROQ_API_KEY,
+            temperature=0.2,
+        )
+    return _llm
 
 
 # --------------- SYSTEM PROMPT -------------------
@@ -65,6 +75,9 @@ def get_agent_response(user_input: str) -> dict:
     Returns a dict with 'response' and 'tool_called'.
     """
     try:
+        # Get LLM instance (lazy initialization)
+        llm = get_llm()
+        
         messages = [
             SystemMessage(content=SYSTEM_PROMPT),
             HumanMessage(content=user_input)

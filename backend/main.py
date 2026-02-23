@@ -14,9 +14,16 @@ async def root():
         "status": "running",
         "endpoints": {
             "docs": "/docs",
-            "ask": "/ask (POST)"
+            "ask": "/ask (POST)",
+            "health": "/health (GET)"
         }
     }
+
+
+@app.get("/health")
+async def health():
+    """Health check endpoint for monitoring."""
+    return {"status": "healthy", "service": "safespace-ai-agent"}
 
 
 # Step2: Receive and validate request from Frontend
